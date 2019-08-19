@@ -93,8 +93,11 @@ var crash = {
 		};
 
 		return {
-			message: error.message ? error.message : error.toString(),
-			trace: error.stack
+			message: error && error.message ? error.message
+				: error && error.toString() ? error.toString()
+				: error ? error
+				: 'Unknown error',
+			trace: error && error.stack
 				? error.stack
 					.split(/\n/)
 					.slice(1) // Skip first line which is just the error text
