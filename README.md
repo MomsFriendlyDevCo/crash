@@ -41,7 +41,6 @@ Valid options are:
 | `prefix`              | `string`   | `"ERROR"`     | Prefix string used when outputting the error                   |
 | `colors`              | `object`   | See code      | Lookup object of colors used for each part of an error message |
 | `text`                | `object`   | See code      | Various text strings used in error messages                    |
-| `parseSplitterNative` | `RegExp`   | See code      | Parser for native error messages                               |
-| `parseSplitterFile`   | `RegExp`   | See code      | Parser for error messages belonging to file paths              |
 | `ignorePaths`         | `RegExp`   | See code      | Path RegExps to blackbox (remove from trace output)            |
 | `filterUnknown`       | `boolean`  | `true`        | Filter out grarbage stack trace lines                          |
+| `parsers`             | `array <Object>` | See code | Collection of parsers, which are executed in order until one matches |

@@ -28,8 +28,12 @@ var crash = {
 		},
 
 		// Options used by crash.decode()
-		parseSplitterNative: /^\s*at (?<callee>.+?) \(<anonymous>\)$/,
-		parseSplitterFile: /^\s*at (?<callee>.+?) \((?<path>.+?):(?<line>[0-9]+):(?<column>[0-9]+)\)$/,
+		parsers: [
+			{match: /^(?<path>.+?):(?<line>[0-9]+)$/, res: groups => ({...groups, type: 'path'})},
+			{match: /^\s+at (?<callee>.+?) \((?<path>.+?):(?<line>[0-9]+):(?<column>[0-9]+)\)$/, res: groups => ({...groups, type: 'native'})},
+			{match: /^\s*at (?<callee>.+?) \(<anonymous>\)$/, res: groups => ({...groups, type: 'native'})},
+			{match: /^\s*at (?<callee>.+?) \((?<path>.+?):(?<line>[0-9]+):(?<column>[0-9]+)\)$/, res: groups => ({...groups, type: 'path'})},
+		],
 		ignorePaths: [
 			/^internal\/modules\/cjs/,
 		],
@@ -65,12 +69,12 @@ var crash = {
 				: traceIndex == err.trace.length - 1 ? settings.text.treeLast
 				: settings.text.tree
 			)
-			+ ' ' + settings.colors.function(trace.callee)
+			+ ' ' + settings.colors.function(trace.callee || 'SYNTAX')
 			+ settings.colors.seperator(settings.text.seperator)
 			+ (
 				trace.isNative
 				? settings.colors.native('native')
-				: `${settings.colors.path(trace.path)} ${settings.colors.linePrefix('+')}${settings.colors.line(trace.line)}:${settings.colors.column(trace.column)}`
+				: `${settings.colors.path(trace.path)} ${settings.colors.linePrefix('+')}${settings.colors.line(trace.line)}${trace.column ? ':' + settings.colors.column(trace.column) : ''}`
 			)
 		));
 	},
@@ -100,15 +104,15 @@ var crash = {
 			trace: error && error.stack
 				? error.stack
 					.split(/\n/)
-					.slice(1) // Skip first line which is just the error text
-					.map(line => {
-						var extracted = settings.parseSplitterNative.exec(line);
-						if (extracted) return {...extracted.groups, type: 'native'};
+					.map((line, offset) => {
+						var matchedResult;
+						var matchedParser = settings.parsers.find(p => matchedResult = p.match.exec(line));
 
-						var extracted = settings.parseSplitterFile.exec(line);
-						if (extracted) return {...extracted.groups, type: 'path'};
-
-						return {callee: line, type: 'unknown'};
+						if (matchedParser) {
+							return matchedParser.res(matchedResult.groups);
+						} else {
+							return {callee: line, type: 'unknown'};
+						}
 					})
 					.filter(trace =>
 						trace.type == 'native'
