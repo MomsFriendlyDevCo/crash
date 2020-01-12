@@ -38,6 +38,7 @@ var crash = {
 			/^internal\/modules\/cjs/,
 		],
 		filterUnknown: true,
+		supportBabel: true,
 	},
 
 
@@ -88,6 +89,7 @@ var crash = {
 	* @param {RegExp} [options.parseSplitterFile] How to decode named function lines
 	* @param {Array <RegExp>} [options.ignorePaths] RegExp matches for paths that should be ignored when tracing
 	* @param {boolean} [options.filterUnknown=true] Filter garbage strack trace lines
+	* @param {boolean} [options.supportBabel=true] Support decoding Babel parsing errors
 	* @returns {Object} An object composed of `{message,trace}` where trace is a collection containing `{type, callee, path?, line? column?}`
 	*/
 	decode: (error, options) => {
@@ -96,31 +98,45 @@ var crash = {
 			...options,
 		};
 
-		return {
-			message: error && error.message ? error.message
-				: error && error.toString() ? error.toString()
-				: error ? error
-				: 'Unknown error',
-			trace: error && error.stack
-				? error.stack
-					.split(/\n/)
-					.map((line, offset) => {
-						var matchedResult;
-						var matchedParser = settings.parsers.find(p => matchedResult = p.match.exec(line));
+		if (settings.supportBabel && error.code && error.code == 'BABEL_PARSE_ERROR') {
+			var babelParsed = /^(?<path>.+?): (?<message>.+) \((?<line>[0-9]+):(?<column>[0-9]+)\)/.exec(error.message);
+			return {
+				babelParsed,
+				message: babelParsed.groups.message,
+				trace: [{
+					type: 'path',
+					path: babelParsed.groups.path,
+					line: parseInt(babelParsed.groups.line),
+					column: parseInt(babelParsed.groups.column),
+				}],
+			};
+		} else { // Assume standard error trace
+			return {
+				message: error && error.message ? error.message
+					: error && error.toString() ? error.toString()
+					: error ? error
+					: 'Unknown error',
+				trace: error && error.stack
+					? error.stack
+						.split(/\n/)
+						.map((line, offset) => {
+							var matchedResult;
+							var matchedParser = settings.parsers.find(p => matchedResult = p.match.exec(line));
 
-						if (matchedParser) {
-							return matchedParser.res(matchedResult.groups);
-						} else {
-							return {callee: line, type: 'unknown'};
-						}
-					})
-					.filter(trace =>
-						trace.type == 'native'
-						|| (!settings.filterUnknown && trace.type != 'unknown')
-						|| (trace.type == 'path' && !settings.ignorePaths.every(re => re.test(trace.path)))
-					)
-				: undefined,
-		};
+							if (matchedParser) {
+								return matchedParser.res(matchedResult.groups);
+							} else {
+								return {callee: line, type: 'unknown'};
+							}
+						})
+						.filter(trace =>
+							trace.type == 'native'
+							|| (!settings.filterUnknown && trace.type != 'unknown')
+							|| (trace.type == 'path' && !settings.ignorePaths.every(re => re.test(trace.path)))
+						)
+					: undefined,
+			};
+		}
 	},
 
 
