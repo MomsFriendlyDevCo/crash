@@ -141,7 +141,11 @@ var crash = {
 							var matchedParser = settings.parsers.find(p => matchedResult = p.match.exec(line));
 
 							if (matchedParser) {
-								return matchedParser.res(matchedResult.groups);
+								var resolved = matchedParser.res(matchedResult.groups);
+								['line', ' col'].forEach(f => {
+									if (resolved[f]) resolved[f] = +resolved[f];
+								})
+								return resolved;
 							} else {
 								return {callee: line, type: 'unknown'};
 							}
