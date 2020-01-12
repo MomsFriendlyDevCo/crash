@@ -1,6 +1,6 @@
 {
   "name": "@momsfriendlydevco/crash",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Error utilities and prettifier",
   "main": "index.js",
   "scripts": {

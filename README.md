@@ -47,7 +47,14 @@ Valid options are:
 | `prefix`              | `string`   | `"ERROR"`      | Prefix string used when outputting the error                   |
 | `colors`              | `object`   | See code       | Lookup object of colors used for each part of an error message |
 | `text`                | `object`   | See code       | Various text strings used in error messages                    |
+| `padding`             | `object`   | See code       | Various text padding options                                   |
 | `ignorePaths`         | `RegExp`   | See code       | Path RegExps to blackbox (remove from trace output)            |
 | `filterUnknown`       | `boolean`  | `true`         | Filter out grarbage stack trace lines                          |
 | `parsers`             | `array <Object>` | See code | Collection of parsers, which are executed in order until one matches |
 | `supportBabel`        | `boolean`  | `true`         | Add support for decoding Babel parser errors                   |
+| `context`             | `object`   | See below      | Options for configuring code-showing context (preview lines of code) |
+| `context.above`       | `boolean`  | `true`         | Show an indicator above the target line                        |
+| `context.below`       | `boolean`  | `true`         | Show an indicator below the target line                        |
+| `context.linesBefore` | `number`   | `1`            | How many lines before the target line to output when showing context |
+| `context.linesAfter`  | `number`   | `1`            | How many lines after the target line to output when showing context  |
+| `context.pathRewrite` | `function` | `path => path` | How to mangle the input file path before reading it to show context  |

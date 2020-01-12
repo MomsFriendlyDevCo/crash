@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var colors = require('chalk');
+var fs = require('fs');
 var fspath = require('path');
 
 var crash = {
@@ -18,6 +19,14 @@ var crash = {
 			linePrefix: colors.grey,
 			line: colors.cyan,
 			column: colors.cyan,
+			lineNumber: colors.grey,
+			lineNumberContext: colors.blue.bold,
+			contextAbovePre: colors.grey,
+			contextAbovePointer: colors.bold.blue,
+			contextAbovePost: colors.grey,
+			contextBelowPre: colors.grey,
+			contextBelowPointer: colors.bold.blue,
+			contextBelowPost: colors.grey,
 		},
 		text: {
 			prefixSeperator: ':',
@@ -25,6 +34,15 @@ var crash = {
 			treeFirst: '├',
 			treeLast: '└',
 			seperator: ' @ ',
+			contextAbovePre: ' ',
+			contextAbovePointer: 'v',
+			contextAbovePost: ' ',
+			contextBelowPre: ' ',
+			contextBelowPointer: '^',
+			contextBelowPost: ' ',
+		},
+		padding: {
+			lineNumber: 5,
 		},
 
 		// Options used by crash.decode()
@@ -39,6 +57,13 @@ var crash = {
 		],
 		filterUnknown: true,
 		supportBabel: true,
+		context: {
+			above: true,
+			below: true,
+			linesBefore: 1,
+			linesAfter: 1,
+			pathRewrite: path => path,
+		},
 	},
 
 
@@ -54,11 +79,9 @@ var crash = {
 	* @returns {string} The STDERR ready output
 	*/
 	trace: (error, options) => {
-		var settings = {
+		var settings = _.defaults(options, crash.defaults, {
 			output: true,
-			...crash.defaults,
-			...options,
-		};
+		});
 
 		var err = crash.decode(error, settings);
 
@@ -67,11 +90,68 @@ var crash = {
 			settings.logger = msg => buf += msg + '\n';
 		}
 
+
+		// OUTPUT: Context line(s)
+		if (err.trace && (settings.context.above || settings.context.below) && err.trace.length > 0 && err.trace[0].path && err.trace[0].line) {
+			try {
+				var contextFile = fs.readFileSync(settings.context.pathRewrite(err.trace[0].path), 'utf-8');
+				contextFile
+					.split(/\n/)
+					.slice(err.trace[0].line - settings.context.linesBefore - 1, err.trace[0].line + settings.context.linesAfter)
+					.forEach((line, offset) => {
+						var isContext = offset == settings.context.linesBefore;
+
+						// Above-line context indicator
+						if (isContext && settings.context.above) {
+							var start = err.trace[0].col || 0;
+							var end = err.trace[0].length ? (err.trace[0].col || 0) + err.trace[0].length : line.length;
+
+							// Calculate tab indent bias (so we can also indent the context above / below lines)
+							var prefixTabs = /^(\t+)?/.exec(line)[1] || '';
+
+							settings.logger(
+								settings.colors.lineNumber(' '.repeat(settings.padding.lineNumber))
+								+ settings.colors.contextAbovePre(prefixTabs)
+								+ settings.colors.contextAbovePre(settings.text.contextAbovePre.repeat(start))
+								+ settings.colors.contextAbovePointer(settings.text.contextAbovePointer.repeat(end - start))
+								+ settings.colors.contextAbovePost(settings.text.contextAbovePost.repeat(end - line.length))
+							);
+						}
+
+						// Output line
+						settings.logger(
+							('' + settings.colors[isContext ? 'lineNumberContext' : 'lineNumber'](err.trace[0].line + offset + settings.context.linesBefore)).padStart(settings.lineNumber)
+							+ line
+						);
+
+						// Below-line context indicator
+						if (isContext && settings.context.below) {
+							var start = err.trace[0].col || 0;
+							var end = err.trace[0].length ? (err.trace[0].col || 0) + err.trace[0].length : line.length;
+
+							settings.logger(
+								settings.colors.lineNumber(' '.repeat(settings.padding.lineNumber))
+								+ settings.colors.contextBelowPre(prefixTabs)
+								+ settings.colors.contextBelowPre(settings.text.contextBelowPre.repeat(start))
+								+ settings.colors.contextBelowPointer(settings.text.contextBelowPointer.repeat(end - start))
+								+ settings.colors.contextBelowPost(settings.text.contextBelowPost.repeat(end - line.length))
+							);
+						}
+					});
+			} catch (e) { // Ignore if source file cannot be read
+				// Pass
+			}
+		}
+
+
+		// OUTPUT: Error message line + start of trace
 		settings.logger.apply(crash, [
 			settings.prefix && settings.colors.prefix(settings.prefix + settings.text.prefixSeperator),
 			settings.colors.message(err.message),
 		].filter(i => i));
 
+
+		// OUTPUT: Trace stack
 		if (err.trace) err.trace.forEach((trace, traceIndex) => settings.logger(
 			' ' + settings.colors.tree(
 				traceIndex == 0 && err.trace.length > 1 ? settings.text.treeFirst
@@ -123,7 +203,7 @@ var crash = {
 				trace: [{
 					type: 'path',
 					path: babelParsed.groups.path,
-					line: parseInt(babelParsed.groups.line),
+					line: parseInt(babelParsed.groups.line) + 1,
 					column: parseInt(babelParsed.groups.column),
 				}],
 			};
