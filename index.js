@@ -79,9 +79,7 @@ var crash = {
 	* @returns {string} The STDERR ready output
 	*/
 	trace: (error, options) => {
-		var settings = _.defaults(options, crash.defaults, {
-			output: true,
-		});
+		var settings = _.merge({}, crash.defaults, {output: true}, options);
 
 		var err = crash.decode(error, settings);
 
@@ -92,7 +90,7 @@ var crash = {
 
 
 		// OUTPUT: Context line(s)
-		if (err.trace && (settings.context.above || settings.context.below) && err.trace.length > 0 && err.trace[0].path && err.trace[0].line) {
+		if (err.trace && (settings.context.above || settings.context.below) && err.trace.length > 0 && err.trace[0].path && 'line' in err.trace[0]) {
 			try {
 				var contextFile = fs.readFileSync(settings.context.pathRewrite(err.trace[0].path), 'utf-8');
 				contextFile
