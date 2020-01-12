@@ -50,14 +50,22 @@ var crash = {
 	* @param {function} [options.logger=console.log] Output device to use
 	* @param {string} [options.prefix] Optional prefix to display
 	* @param {Object <function>} [options.colors] Color functions to apply to various parts of the output trace
+	* @param {boolean} [options.output=true] Write output directly to the specified output.logger, disable this to return the computed output instead
+	* @returns {string} The STDERR ready output
 	*/
 	trace: (error, options) => {
 		var settings = {
+			output: true,
 			...crash.defaults,
 			...options,
 		};
 
 		var err = crash.decode(error, settings);
+
+		if (settings.output == false) { // Replace logger with something that buffers the output and then returns it
+			var buf = '';
+			settings.logger = msg => buf += msg + '\n';
+		}
 
 		settings.logger.apply(crash, [
 			settings.prefix && settings.colors.prefix(settings.prefix + settings.text.prefixSeperator),
@@ -78,7 +86,16 @@ var crash = {
 				: `${settings.colors.path(trace.path)} ${settings.colors.linePrefix('+')}${settings.colors.line(trace.line)}${trace.column ? ':' + settings.colors.column(trace.column) : ''}`
 			)
 		));
+
+		if (!settings.output) return buf;
 	},
+
+
+	/**
+	* Shorthand function to call trace without output enabled
+	* @see trace()
+	*/
+	generate: (error, options) => crash.trace(error, {...options, output: false}),
 
 
 	/**
