@@ -5,7 +5,7 @@ var fspath = require('path');
 var crash = {
 	defaults: {
 		// Options used by crash.trace()
-		logger: console.log,
+		logger: console.warn,
 		prefix: 'ERROR',
 		colors: {
 			message: colors.reset,
