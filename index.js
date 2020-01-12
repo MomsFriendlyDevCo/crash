@@ -65,7 +65,7 @@ var crash = {
 
 		if (err.trace) err.trace.forEach((trace, traceIndex) => settings.logger(
 			' ' + settings.colors.tree(
-				traceIndex == 0 ? settings.text.treeFirst
+				traceIndex == 0 && err.trace.length > 1 ? settings.text.treeFirst
 				: traceIndex == err.trace.length - 1 ? settings.text.treeLast
 				: settings.text.tree
 			)
