@@ -45,7 +45,7 @@ Valid options are:
 |-----------------------|------------|----------------|----------------------------------------------------------------|
 | `logger`              | `function` | `console.warn` | Actual outputter, used when writing the error                  |
 | `prefix`              | `string`   | `"ERROR"`      | Prefix string used when outputting the error                   |
-| `colors`              | `object`   | See code       | Lookup object of colors used for each part of an error message |
+| `colors`              | `object` or `boolean` | See code | Lookup object of colors used for each part of an error message. If falsy all colors (and ANSI output) is disabled |
 | `text`                | `object`   | See code       | Various text strings used in error messages                    |
 | `padding`             | `object`   | See code       | Various text padding options                                   |
 | `ignorePaths`         | `RegExp`   | See code       | Path RegExps to blackbox (remove from trace output)            |

@@ -74,12 +74,14 @@ var crash = {
 	* @param {Object} [options] Additional cutomization options
 	* @param {function} [options.logger=console.log] Output device to use
 	* @param {string} [options.prefix] Optional prefix to display
-	* @param {Object <function>} [options.colors] Color functions to apply to various parts of the output trace
+	* @param {Object<function>|boolean} [options.colors] Color functions to apply to various parts of the output trace, if falsy colors are disabled
 	* @param {boolean} [options.output=true] Write output directly to the specified output.logger, disable this to return the computed output instead
 	* @returns {string} The STDERR ready output
 	*/
 	trace: (error, options) => {
 		var settings = _.merge({}, crash.defaults, {output: true}, options);
+
+		if (!settings.colors) settings.colors = _.mapValues(crash.defaults.colors, key => (...txt) => txt.join(' '));
 
 		var err = crash.decode(error, settings);
 
