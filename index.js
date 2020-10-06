@@ -195,8 +195,8 @@ var crash = {
 			...options,
 		};
 
-		if (settings.supportBabel && error && error.code && error.code == 'BABEL_PARSE_ERROR') {
-			var babelParsed = /^(?<path>.+?): (?<message>.+) \((?<line>[0-9]+):(?<column>[0-9]+)\)/.exec(error.message);
+		var babelParsed;
+		if (settings.supportBabel && error && error.code && error.code == 'BABEL_PARSE_ERROR' && (babelParsed = /^(?<path>.+?): (?<message>.+) \((?<line>[0-9]+):(?<column>[0-9]+)\)/.exec(error.message))) {
 			return {
 				babelParsed,
 				message: babelParsed.groups.message,
